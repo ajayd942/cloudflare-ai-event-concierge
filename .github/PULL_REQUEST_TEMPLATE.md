@@ -6,6 +6,10 @@ What changed and why?
 
 Link the approved issue and its design documents.
 
+## Decision traceability
+
+List the applicable planning decision IDs, approved ADRs, and any intentionally superseded decisions.
+
 ## Acceptance criteria
 
 - [ ] Map every acceptance criterion to implementation and evidence.
@@ -39,6 +43,7 @@ List unresolved decisions or write `None`.
 - [ ] Scope matches the approved Linear issue.
 - [ ] Required tests pass.
 - [ ] Documentation is updated.
+- [ ] Claims are supported by measured or deployed evidence.
 - [ ] No secrets or private data are present.
+- [ ] No production credential, deployment, merge, or other human-only action was performed.
 - [ ] PR is not marked ready until automated checks pass.
-

@@ -1,10 +1,10 @@
 # Symphony Development Workflow
 
-Status: Draft — Linear identifiers are configured; Symphony runner configuration still requires review and approval.
+Status: Draft — core Linear identifiers are configured; the `design-only` label and Symphony runner configuration still require review and approval.
 
 ## Purpose
 
-Linear is the project control plane. Symphony may dispatch agents only for explicitly approved and unblocked work. Successful agent execution ends at `Human Review`, not `Done`.
+Linear is the project control plane. Symphony may dispatch agents only for explicitly approved and unblocked work. Successful agent execution ends at `Human Review`, not `Done`. The owner-approved initial plan is the bootstrap baseline; subsequently approved PRD/HLD/LLD/ADRs and issue acceptance criteria take precedence and must record intentional supersession.
 
 ## Linear states
 
@@ -27,7 +27,7 @@ Linear is the project control plane. Symphony may dispatch agents only for expli
 
 ## Dispatch eligibility
 
-Symphony may dispatch only issues in `Ready for Agent` that:
+For implementation work, Symphony may dispatch only issues in `Ready for Agent` that:
 
 - Have approved linked design documents
 - Have explicit scope and non-goals
@@ -35,6 +35,17 @@ Symphony may dispatch only issues in `Ready for Agent` that:
 - Have all dependencies completed
 - Are not labeled `human-only`, `security-sensitive`, or `production-change`
 - Do not require production credentials or external authority
+
+### Design-only bootstrap exception
+
+An issue may omit pre-existing approved design documents only when all of these are true:
+
+- The owner approved it and moved it to `Ready for Agent`.
+- It has the `design-only` label and is one of the four seed issues: product definition, HLD/ADRs, detailed design, or implementation task-graph generation.
+- Its predecessor approval gate is complete, its documentation scope and non-goals are explicit, and its acceptance criteria are testable.
+- It changes only the specified documentation or control-plane artifacts; it does not change application code, infrastructure, secrets, credentials, or deployments.
+
+The exception removes the design bootstrap cycle only. It does not weaken any implementation dispatch condition.
 
 ## Agent lifecycle
 
@@ -48,6 +59,14 @@ Symphony may dispatch only issues in `Ready for Agent` that:
 8. Assign the issue to the human reviewer.
 9. If review requests changes, return to `In Progress`, address only accepted feedback, rerun verification, and return to `Human Review`.
 10. Never merge or mark the issue `Done`; those transitions remain human-owned.
+
+## Runner and canary policy
+
+- Run the official reference implementation locally on the owner's trusted Mac first.
+- Use workspace-write isolation and allow network access only where the dispatched issue requires it.
+- Give the runner only a repository-scoped GitHub credential and team-scoped Linear access; never expose Cloudflare or Anthropic production credentials to an agent workspace.
+- Start with one active agent. Increase to two only after three correctly scoped documentation/code canaries and an explicit owner decision.
+- Fail closed if any credential boundary, state transition, reviewer assignment, or authority check cannot be enforced.
 
 ## Mandatory stop conditions
 

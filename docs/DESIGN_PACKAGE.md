@@ -4,7 +4,7 @@ Status: Draft inventory
 
 Implementation may not begin until the applicable documents are reviewed and marked approved.
 
-The [`INITIAL_IMPLEMENTATION_PLAN.md`](planning/INITIAL_IMPLEMENTATION_PLAN.md) document is the preserved source plan for this package. It provides context and proposed decisions, but does not replace the approvals required below.
+The [`INITIAL_IMPLEMENTATION_PLAN.md`](planning/INITIAL_IMPLEMENTATION_PLAN.md) document is the owner-approved planning baseline for this package. Its decision IDs constrain the initial design, but it does not replace review and approval of the formal artifacts below. Once approved, the PRD, HLD, LLD, ADRs, and Linear acceptance criteria take precedence and must record any intentional supersession.
 
 ## Product and architecture
 

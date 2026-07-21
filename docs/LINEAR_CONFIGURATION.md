@@ -1,6 +1,6 @@
 # Linear Configuration
 
-Status: Configured for design work; no implementation issues have been created.
+Status: Workflow states and human-control labels configured; `design-only` bootstrap label still requires creation and recording before seed dispatch. No implementation issues have been created.
 
 This document records non-secret Linear identifiers required by the Symphony runner. The Linear personal API key remains in macOS Keychain under the service name `symphony-linear-api-key` and must never be committed.
 
@@ -45,10 +45,14 @@ The default Linear states `Backlog`, `Todo`, `In Review`, `Canceled`, and `Dupli
 | `production-change` | `e67b88c3-243a-4595-9a42-84e94950fab8` |
 | `needs-human-decision` | `e1beccce-63b8-43a7-954f-b29b9f117e6e` |
 
+The approved `design-only` label does not yet have a recorded ID. Create it before dispatching any seed issue, record the ID here through review, and make the runner fail closed while it is absent.
+
 ## Runtime invariants
 
-- Dispatch only issues in this project and in `Ready for Agent`.
+- Dispatch only owner-approved issues in this project and in `Ready for Agent`.
+- Require approved linked designs for implementation; allow only the documented `design-only` seed exception when its label ID is configured and its predecessor gate is complete.
 - Reject dispatch when any human-control label is present.
+- Start with one active agent; raising concurrency to two requires three successful canaries and an explicit owner decision.
 - Set `Human Review` and the human reviewer ID in the same API update.
 - Never move an issue to `Done`, merge a pull request, or perform a production change autonomously.
 - Stop safely if a configured identifier no longer resolves to the expected name and type.

@@ -4,6 +4,12 @@ Status: Proposed
 
 Date: YYYY-MM-DD
 
+Planning decision IDs: <!-- e.g. P-01, D-09 -->
+
+Supersedes: None
+
+Superseded by: None
+
 ## Context
 
 Describe the problem, constraints, and forces that require a decision.
@@ -26,4 +32,4 @@ Describe positive effects, negative effects, operational implications, and follo
 - Decision date:
 - Related Linear issue:
 - Related PR:
-
+- Evidence reviewed:
