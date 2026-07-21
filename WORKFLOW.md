@@ -34,6 +34,7 @@ agent:
   max_concurrent_agents: 1
   max_turns: 20
 codex:
+  approval_policy: never
   command: >-
     "$CODEX_BIN" --config shell_environment_policy.inherit=all
     --config 'model="gpt-5.6-sol"'
