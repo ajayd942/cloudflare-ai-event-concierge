@@ -45,7 +45,7 @@ From the repository root on `main` after the Symphony configuration PR is merged
 ./scripts/symphony/start-local.sh
 ```
 
-The dashboard is available at `http://127.0.0.1:4040`. Stop the foreground runner with `Ctrl-C`. Logs are written under `~/.local/state/symphony/cloudflare-ai-event-concierge/logs`; no application questions, model answers, or production secrets belong there.
+The dashboard is available at `http://127.0.0.1:4040`. To stop the foreground release build, press `Ctrl-C`, then type `a` at the Erlang `BREAK` menu. Logs are written under `~/.local/state/symphony/cloudflare-ai-event-concierge/logs`; no application questions, model answers, or production secrets belong there.
 
 The start script deliberately fails if either Keychain credential is missing. It also refuses to launch from a dirty checkout or from a branch other than `main`.
 
