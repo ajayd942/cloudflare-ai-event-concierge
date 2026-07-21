@@ -11,7 +11,7 @@ fail() {
   exit 1
 }
 
-for command_name in symphony git gh curl jq security shasum; do
+for command_name in symphony git gh curl jq ruby security shasum; do
   command -v "$command_name" >/dev/null 2>&1 || fail "missing command: $command_name"
 done
 
@@ -45,6 +45,15 @@ if test -n "$broad_credential" && test "$github_token" = "$broad_credential"; th
 fi
 
 test -f "$repo_root/WORKFLOW.md" || fail "WORKFLOW.md is missing"
+approval_policy="$(
+  ruby -ryaml -e '
+    document = File.read(ARGV.fetch(0))
+    front_matter = document.split(/^---\s*$/, 3).fetch(1)
+    config = YAML.safe_load(front_matter, permitted_classes: [], permitted_symbols: [], aliases: false)
+    puts config.dig("codex", "approval_policy")
+  ' "$repo_root/WORKFLOW.md"
+)" || fail "WORKFLOW.md front matter is invalid"
+test "$approval_policy" = "never" || fail "codex.approval_policy must be never for the installed Codex app-server"
 test -z "$(git -C "$repo_root" status --porcelain)" || fail "repository checkout is dirty"
 test "$(git -C "$repo_root" branch --show-current)" = "main" || fail "start Symphony only from main"
 
@@ -52,4 +61,5 @@ printf 'PASS: Symphony binary and checksum\n'
 printf 'PASS: Codex, Git, GitHub CLI, and support tools\n'
 printf 'PASS: Linear Keychain credential and viewer\n'
 printf 'PASS: dedicated GitHub credential can read the repository\n'
+printf 'PASS: Codex approval policy is compatible with the installed app-server\n'
 printf 'PASS: clean main checkout and repository workflow\n'

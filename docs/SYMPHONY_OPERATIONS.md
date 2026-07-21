@@ -1,6 +1,6 @@
 # Local Symphony Operations
 
-Status: Bootstrap configuration awaiting owner review
+Status: Active bootstrap configuration for the documentation-only canary
 
 ## Installed runtime
 
@@ -15,6 +15,8 @@ The Mac uses OpenAI Symphony's experimental reference implementation:
 Symphony is an engineering preview intended for trusted environments. This setup follows the [official README](https://github.com/openai/symphony/blob/main/README.md), [reference implementation guide](https://github.com/openai/symphony/blob/main/elixir/README.md), and [service specification](https://github.com/openai/symphony/blob/main/SPEC.md).
 
 The `v0.0.1` binary also requires the explicit CLI acknowledgment `--i-understand-that-this-will-be-running-without-the-usual-guardrails`. The checked-in start script includes it so the warning is visible and reviewable; running that script is a deliberate owner action, not an unattended login service.
+
+The workflow explicitly sets `codex.approval_policy: never`. Symphony `v0.0.1` otherwise sends a structured `reject` policy that the Codex app server bundled with the current ChatGPT desktop release does not accept. `never` prevents an unattended run from waiting for interactive approvals; it does not remove the workspace-write sandbox, issue eligibility checks, one-agent limit, or human-only merge and deployment boundaries. The doctor verifies this compatibility setting before every start.
 
 ## Trust boundaries
 
@@ -48,6 +50,8 @@ From the repository root on `main` after the Symphony configuration PR is merged
 The dashboard is available at `http://127.0.0.1:4040`. To stop the foreground release build, press `Ctrl-C`, then type `a` at the Erlang `BREAK` menu. Logs are written under `~/.local/state/symphony/cloudflare-ai-event-concierge/logs`; no application questions, model answers, or production secrets belong there.
 
 The start script deliberately fails if either Keychain credential is missing. It also refuses to launch from a dirty checkout or from a branch other than `main`.
+
+If the dashboard reports `unknown variant reject`, the effective workflow is missing `codex.approval_policy: never`. Stop the runner, restore the reviewed setting on clean `main`, rerun `doctor.sh`, and only then return the canary issue to `Ready for Agent`.
 
 ## Seed execution sequence
 
