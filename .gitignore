@@ -1,0 +1,21 @@
+# Dependencies and builds
+node_modules/
+dist/
+coverage/
+.wrangler/
+playwright-report/
+test-results/
+
+# Local configuration and secrets
+.dev.vars
+.env
+.env.*
+!.env.example
+!.dev.vars.example
+
+# Local tooling
+.DS_Store
+*.log
+.idea/
+.vscode/
+
