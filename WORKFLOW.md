@@ -1,6 +1,6 @@
 # Symphony Development Workflow
 
-Status: Draft — runtime-specific configuration will be added after the Linear project identifiers and Symphony runner are configured.
+Status: Draft — Linear identifiers are configured; Symphony runner configuration still requires review and approval.
 
 ## Purpose
 
@@ -70,7 +70,8 @@ Move the issue to `Needs Human Decision` and stop when:
 - Approve pull requests and merge to `main`
 - Change the workflow's trust or approval policy
 
-## Linear automation requirement
+## Human-review handoff enforcement
 
-Configure an automation so that moving an issue to `Human Review` assigns it to the repository owner and notifies them. Symphony must not depend on an agent remembering this assignment manually.
+Linear does not provide a general custom rule that assigns a specific user whenever an issue enters an arbitrary status. Therefore, Symphony must make the handoff with one `issueUpdate` mutation that sets both the `Human Review` state and the repository owner's assignee ID. Assignment causes Linear to subscribe and notify the reviewer.
 
+The transition helper must fail closed: it must not move the issue to `Human Review` if it cannot also assign the reviewer. Agents must use the helper and must not reproduce this mutation ad hoc. The runtime identifiers are recorded in [`docs/LINEAR_CONFIGURATION.md`](docs/LINEAR_CONFIGURATION.md).
