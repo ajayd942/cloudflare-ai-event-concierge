@@ -14,4 +14,5 @@ The project will follow an approval-gated, agent-assisted development lifecycle.
 - [Engineering workflow](WORKFLOW.md)
 - [Linear runtime configuration](docs/LINEAR_CONFIGURATION.md)
 - [Project charter](docs/PROJECT_CHARTER.md)
+- [Initial comprehensive plan](docs/planning/INITIAL_IMPLEMENTATION_PLAN.md)
 - [Human approval policy](docs/HUMAN_APPROVAL_POLICY.md)
