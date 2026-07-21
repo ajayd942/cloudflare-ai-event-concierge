@@ -1,6 +1,6 @@
 # Linear Configuration
 
-Status: Workflow states and human-control labels configured; `design-only` bootstrap label still requires creation and recording before seed dispatch. No implementation issues have been created.
+Status: Workflow states and control labels configured. The four documentation-only seed issues are recorded below; no implementation issues have been created.
 
 This document records non-secret Linear identifiers required by the Symphony runner. The Linear personal API key remains in macOS Keychain under the service name `symphony-linear-api-key` and must never be committed.
 
@@ -44,8 +44,18 @@ The default Linear states `Backlog`, `Todo`, `In Review`, `Canceled`, and `Dupli
 | `security-sensitive` | `4c2c5d46-174d-4bd2-ab49-d6e2d36f408c` |
 | `production-change` | `e67b88c3-243a-4595-9a42-84e94950fab8` |
 | `needs-human-decision` | `e1beccce-63b8-43a7-954f-b29b9f117e6e` |
+| `design-only` | `0d4a7d4a-eee4-44d7-b3c1-fbdb81cb4aa1` |
 
-The approved `design-only` label does not yet have a recorded ID. Create it before dispatching any seed issue, record the ID here through review, and make the runner fail closed while it is absent.
+## Seed issue chain
+
+All seed issues begin in `Inbox`, carry `design-only`, and are assigned to the owner for initial approval. The owner releases only the next eligible issue after approving and merging its predecessor.
+
+| Order | Deliverable | Linear issue | Initially blocked by |
+|---:|---|---|---|
+| 1 | Product definition | [AJA-5](https://linear.app/ajayd94/issue/AJA-5/seed-14-define-product-requirements-and-user-journeys) | — |
+| 2 | HLD and ADR proposals | [AJA-6](https://linear.app/ajayd94/issue/AJA-6/seed-24-produce-hld-and-architecture-decision-proposals) | AJA-5 |
+| 3 | Detailed design package | [AJA-7](https://linear.app/ajayd94/issue/AJA-7/seed-34-produce-the-detailed-design-and-assurance-package) | AJA-6 |
+| 4 | Implementation task graph | [AJA-8](https://linear.app/ajayd94/issue/AJA-8/seed-44-generate-the-implementation-task-graph-in-linear) | AJA-7 |
 
 ## Runtime invariants
 

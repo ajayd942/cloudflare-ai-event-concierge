@@ -14,6 +14,7 @@ This is a demonstration project. All public event information is fictional or sa
 
 - [Linear project](https://linear.app/ajayd94/project/cloudflare-ai-event-concierge-eefcc601d728)
 - [Engineering workflow](WORKFLOW.md)
+- [Local Symphony operations](docs/SYMPHONY_OPERATIONS.md)
 - [Linear runtime configuration](docs/LINEAR_CONFIGURATION.md)
 - [Project charter](docs/PROJECT_CHARTER.md)
 - [Owner-approved planning baseline](docs/planning/INITIAL_IMPLEMENTATION_PLAN.md)
