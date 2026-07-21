@@ -1,10 +1,82 @@
+---
+tracker:
+  kind: linear
+  endpoint: https://api.linear.app/graphql
+  api_key: $LINEAR_API_KEY
+  project_slug: cloudflare-ai-event-concierge-eefcc601d728
+  required_labels:
+    - design-only
+  active_states:
+    - Ready for Agent
+    - In Progress
+    - Agent QA
+  terminal_states:
+    - Done
+    - Rejected
+    - Canceled
+    - Cancelled
+    - Duplicate
+polling:
+  interval_ms: 10000
+workspace:
+  root: $SYMPHONY_WORKSPACE_ROOT
+hooks:
+  after_create: |
+    test -n "$SOURCE_REPO_URL"
+    test -n "$GH_TOKEN"
+    git clone --origin origin --depth 1 "$SOURCE_REPO_URL" .
+    git config --local credential.https://github.com.helper '!gh auth git-credential'
+    git config --local rerere.enabled true
+    git config --local rerere.autoupdate true
+    gh auth status
+  timeout_ms: 120000
+agent:
+  max_concurrent_agents: 1
+  max_turns: 20
+codex:
+  command: >-
+    "$CODEX_BIN" --config shell_environment_policy.inherit=all
+    --config 'model="gpt-5.6-sol"'
+    --config model_reasoning_effort=xhigh app-server
+  thread_sandbox: workspace-write
+  turn_sandbox_policy:
+    type: workspaceWrite
+    networkAccess: true
+---
+
 # Symphony Development Workflow
 
-Status: Draft — core Linear identifiers are configured; the `design-only` label and Symphony runner configuration still require review and approval.
+Status: Configured for owner review and a documentation-only canary. Implementation dispatch remains disabled by the required `design-only` label until a later human-reviewed workflow change.
 
 ## Purpose
 
 Linear is the project control plane. Symphony may dispatch agents only for explicitly approved and unblocked work. Successful agent execution ends at `Human Review`, not `Done`. The owner-approved initial plan is the bootstrap baseline; subsequently approved PRD/HLD/LLD/ADRs and issue acceptance criteria take precedence and must record intentional supersession.
+
+## Current issue context
+
+You are running unattended for Linear issue `{{ issue.identifier }}`.
+
+- Title: `{{ issue.title }}`
+- State: `{{ issue.state }}`
+- Labels: `{{ issue.labels }}`
+- URL: `{{ issue.url }}`
+
+Read the complete issue description before acting. Work only inside the provided repository workspace. Use the injected `linear_graphql` tool for Linear reads and writes; never retrieve or print the raw Linear token.
+
+Before editing, fail closed unless the issue belongs to this project, is labeled `design-only`, is in an active state, has no unresolved blocker or human-control label, and is one of the four approved seed tasks. Move a policy-blocked issue to `Needs Human Decision`, assign the repository owner in the same update, record a concise blocker in the single workpad comment, and stop.
+
+For an eligible issue:
+
+1. Move it to `In Progress` and create or update one `## Codex Workpad` comment containing the plan, acceptance criteria, validation, and evidence.
+2. Fetch `origin/main`, create a new `symphony/<issue-identifier>-<short-slug>` branch, and read `AGENTS.md`, the issue, the approved baseline, and applicable approved artifacts.
+3. Produce only the documentation or Linear control-plane output authorized by the issue. Do not change application code, cloud resources, secrets, credentials, billing, DNS, or production state.
+4. Validate every acceptance criterion and all applicable repository checks. Review the complete diff for scope, security, privacy, cost, and unsupported claims.
+5. Commit intentionally, push the branch, and create or update a pull request using the repository template. The PR must map acceptance criteria and decision IDs to evidence and must never contain secrets or private wedding data.
+6. Attach the PR to the Linear issue. Resolve all actionable PR feedback and rerun validation before handoff.
+7. Only when the branch is pushed, checks pass, and the review packet is complete, atomically move the issue to `Human Review` and assign reviewer `65c7a930-259a-42c5-b166-424290a77605`.
+8. Stop. Never merge the PR, deploy, roll back production, create or rotate secrets, change trust policy, or mark the issue `Done`.
+
+If a reviewer requests changes, the human returns the issue to `In Progress`; resume the preserved workspace, address the accepted feedback, update the same workpad, push the revision, and return it to `Human Review`. If the PR is merged, only the human marks the issue `Done` and releases the next blocked seed issue.
 
 ## Linear states
 
