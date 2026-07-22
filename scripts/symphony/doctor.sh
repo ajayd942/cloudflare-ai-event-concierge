@@ -45,15 +45,56 @@ if test -n "$broad_credential" && test "$github_token" = "$broad_credential"; th
 fi
 
 test -f "$repo_root/WORKFLOW.md" || fail "WORKFLOW.md is missing"
-approval_policy="$(
+runtime_policy="$(
   ruby -ryaml -e '
     document = File.read(ARGV.fetch(0))
     front_matter = document.split(/^---\s*$/, 3).fetch(1)
     config = YAML.safe_load(front_matter, permitted_classes: [], permitted_symbols: [], aliases: false)
-    puts config.dig("codex", "approval_policy")
+    command = config.dig("codex", "command").to_s
+    values = [
+      config.dig("codex", "approval_policy"),
+      config.dig("codex", "thread_sandbox"),
+      config.dig("codex", "turn_sandbox_policy", "type"),
+      command.include?("shell_environment_policy.ignore_default_excludes=true"),
+      command.include?("shell_environment_policy.include_only="),
+      command.include?("GH_TOKEN"),
+      command.include?("GITHUB_TOKEN"),
+      command.include?("LINEAR_API_KEY")
+    ]
+    puts values.join("\t")
   ' "$repo_root/WORKFLOW.md"
 )" || fail "WORKFLOW.md front matter is invalid"
+IFS=$'\t' read -r approval_policy thread_sandbox turn_sandbox_type explicit_secret_filter environment_allowlist has_gh_token has_github_token leaks_linear_token <<< "$runtime_policy"
 test "$approval_policy" = "never" || fail "codex.approval_policy must be never for the installed Codex app-server"
+test "$thread_sandbox" = "danger-full-access" || fail "codex.thread_sandbox must be danger-full-access"
+test "$turn_sandbox_type" = "dangerFullAccess" || fail "codex.turn_sandbox_policy.type must be dangerFullAccess"
+test "$explicit_secret_filter" = "true" || fail "Codex shell policy must explicitly control default secret filtering"
+test "$environment_allowlist" = "true" || fail "Codex shell policy must use an environment allowlist"
+test "$has_gh_token" = "true" || fail "Codex shell allowlist must include GH_TOKEN"
+test "$has_github_token" = "true" || fail "Codex shell allowlist must include GITHUB_TOKEN"
+test "$leaks_linear_token" = "false" || fail "Codex shell allowlist must not expose LINEAR_API_KEY"
+
+schema_support="$(
+  ruby -rtmpdir -e '
+    Dir.mktmpdir("symphony-codex-schema") do |directory|
+      generated = system(
+        ARGV.fetch(0), "app-server", "generate-json-schema", "--out", directory,
+        out: File::NULL, err: File::NULL
+      )
+      abort "schema generation failed" unless generated
+      thread_schema = File.read(File.join(directory, "v2", "ThreadStartParams.json"))
+      turn_schema = File.read(File.join(directory, "v2", "TurnStartParams.json"))
+      puts [
+        thread_schema.include?(%q{"danger-full-access"}),
+        turn_schema.include?(%q{"dangerFullAccess"})
+      ].join("\t")
+    end
+  ' "$codex_path"
+)" || fail "could not inspect the installed Codex app-server schema"
+IFS=$'\t' read -r supports_thread_full_access supports_turn_full_access <<< "$schema_support"
+test "$supports_thread_full_access" = "true" || fail "installed Codex app-server does not support danger-full-access threads"
+test "$supports_turn_full_access" = "true" || fail "installed Codex app-server does not support dangerFullAccess turns"
+
 test -z "$(git -C "$repo_root" status --porcelain)" || fail "repository checkout is dirty"
 test "$(git -C "$repo_root" branch --show-current)" = "main" || fail "start Symphony only from main"
 
@@ -62,4 +103,6 @@ printf 'PASS: Codex, Git, GitHub CLI, and support tools\n'
 printf 'PASS: Linear Keychain credential and viewer\n'
 printf 'PASS: dedicated GitHub credential can read the repository\n'
 printf 'PASS: Codex approval policy is compatible with the installed app-server\n'
+printf 'PASS: Codex danger-full-access thread and turn policies\n'
+printf 'PASS: restricted agent shell environment and host-side Linear token\n'
 printf 'PASS: clean main checkout and repository workflow\n'

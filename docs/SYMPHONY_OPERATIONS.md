@@ -16,18 +16,24 @@ Symphony is an engineering preview intended for trusted environments. This setup
 
 The `v0.0.1` binary also requires the explicit CLI acknowledgment `--i-understand-that-this-will-be-running-without-the-usual-guardrails`. The checked-in start script includes it so the warning is visible and reviewable; running that script is a deliberate owner action, not an unattended login service.
 
-The workflow explicitly sets `codex.approval_policy: never`. Symphony `v0.0.1` otherwise sends a structured `reject` policy that the Codex app server bundled with the current ChatGPT desktop release does not accept. `never` prevents an unattended run from waiting for interactive approvals; it does not remove the workspace-write sandbox, issue eligibility checks, one-agent limit, or human-only merge and deployment boundaries. The doctor verifies this compatibility setting before every start.
+The workflow explicitly sets `codex.approval_policy: never`. Symphony `v0.0.1` otherwise sends a structured `reject` policy that the Codex app server bundled with the current ChatGPT desktop release does not accept. `never` prevents an unattended run from waiting for interactive approvals.
+
+The runner also uses `danger-full-access` for the Codex thread and turns. AJA-6 demonstrated that Codex's `workspace-write` policy protects `.git` recursively, so an unattended agent could edit repository files but could not reliably fetch, create a branch, commit, or push. The owner explicitly accepted the broader host permission on 2026-07-23 to restore the required Git lifecycle. This intentionally supersedes planning decision G-10 only for the local Symphony runner; see [`ADR-0001`](adr/0001-run-symphony-with-danger-full-access.md).
+
+`danger-full-access` removes Codex's filesystem sandbox. It does not grant additional project authority, credentials, issue eligibility, merge permission, or deployment permission. The doctor verifies both sandbox values, the compatible approval policy, and the reviewed shell-environment restriction before every start.
 
 ## Trust boundaries
 
 - Run Symphony only on the owner's trusted Mac.
 - Start with one agent and the `design-only` required label.
 - Each issue gets an isolated workspace under `~/.local/share/symphony/workspaces/cloudflare-ai-event-concierge`.
-- Codex receives workspace-write access and network access required for GitHub and package/test commands.
+- Codex runs with full host filesystem and network access. This is a deliberate trusted-host risk accepted so Git metadata can be written; the prompt still limits work to the current issue workspace.
 - Symphony keeps the Linear token host-side and exposes the scoped `linear_graphql` tool to Codex.
 - Codex receives only a dedicated fine-grained GitHub token limited to this repository's Contents and Pull requests permissions.
+- Agent subprocesses receive a strict environment allowlist containing basic shell variables, the dedicated GitHub token, and repository/workspace locations. They do not receive `LINEAR_API_KEY` or cloud/model-provider credentials.
 - Cloudflare, Anthropic, production, billing, DNS, and deployment credentials are explicitly removed before launch.
 - Agents may create branches and PRs but may not merge, deploy, roll back, mark issues `Done`, or change trust policy.
+- Do not run Symphony while unrelated sensitive work is open, while untrusted issues are eligible, or while credentials outside the documented allowlist are required. Stop the foreground process when the approved issue is handed back to a human.
 
 ## Required Keychain entries
 
@@ -52,6 +58,8 @@ The dashboard is available at `http://127.0.0.1:4040`. To stop the foreground re
 The start script deliberately fails if either Keychain credential is missing. It also refuses to launch from a dirty checkout or from a branch other than `main`.
 
 If the dashboard reports `unknown variant reject`, the effective workflow is missing `codex.approval_policy: never`. Stop the runner, restore the reviewed setting on clean `main`, rerun `doctor.sh`, and only then return the canary issue to `Ready for Agent`.
+
+If Git reports `Operation not permitted` for `.git/FETCH_HEAD` or other Git metadata, stop the runner and verify that both `codex.thread_sandbox: danger-full-access` and `codex.turn_sandbox_policy.type: dangerFullAccess` are present on clean `main`. Do not create a nested recovery clone or silently weaken another control.
 
 ## Seed execution sequence
 
