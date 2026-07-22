@@ -123,7 +123,7 @@ implementation, and review evidence.
 | ID | Requirement | Acceptance signal | Approved decisions |
 |---|---|---|---|
 | PR-ADM-01 | Only an authenticated and application-allowlisted administrator can read or mutate admin state. | Cloudflare Access and Worker-side JWT validation both fail closed; state-changing requests also enforce same-origin policy. | S-02 through S-05, U-01 |
-| PR-ADM-02 | An administrator can add, edit, enable, disable, and delete draft entries; edit presentation content; preview changes; and explicitly save a validated draft. | The UI shows dirty state, field errors, navigation warning, and concurrency conflict rather than silently overwriting another edit. | C-07, M-02 through M-05 |
+| PR-ADM-02 | An administrator can add, edit, enable, disable, and delete draft entries; edit presentation content; preview changes; and explicitly save a validated draft. | The UI shows dirty state, field errors, navigation warning, and concurrency conflict rather than silently overwriting another edit. Every admin error uses plain-language copy with a recovery action and does not expose protocol details such as ETags or revision numbers. | C-07, M-02 through M-05 |
 | PR-ADM-03 | Preview uses draft content without making it public or polluting the published Vectorize index. | Preview shows sources, retrieval mode/scores, answer, and warnings while production index state is unchanged. | U-10, M-05 |
 | PR-ADM-04 | Publish requires a review summary, validation, content count, explicit confirmation, current draft revision, and an idempotency key. | A successful publish creates one new content version; a failure before the permitted readiness decision leaves current public content unchanged. | U-01 through U-07, M-06 |
 | PR-ADM-05 | A published correction is available immediately through lexical retrieval even when semantic indexing is pending or failed. | Admin status displays `pending`, `ready`, or `failed`; public behavior falls back to lexical retrieval. | U-04, M-07, H-09 |
@@ -279,7 +279,9 @@ the administrator; the current draft and its ETag are available.
    and navigation triggers a warning.
 4. The administrator explicitly saves the draft with `If-Match`; the Worker
    validates the complete document and rejects a stale edit as a visible
-   concurrency conflict.
+   concurrency conflict. The UI explains how to refresh or reconcile the edit in
+   plain language without exposing ETags, revision numbers, or other protocol
+   jargon.
 5. The administrator previews a question against the draft. The preview shows
    selected sources, retrieval mode/scores, answer, and warnings without changing
    published content or the production vector index.
@@ -373,9 +375,11 @@ a narrow, reversible blast radius and no coupling to private wedding systems.
 
 All values in this section are **targets**, not claims of current or achieved
 performance. Results may be reported only after the named evaluation or
-measurement is run against the approved build and environment.
+measurement is run against the approved build and environment. Technical rows
+are pre-production release gates; the two portfolio rows are explicitly timed
+post-launch outcome proxies.
 
-| Dimension | Target before production enablement | Measurement boundary | Decisions |
+| Dimension | Target or review cadence | Measurement boundary | Decisions |
 |---|---|---|---|
 | Evaluation corpus | At least 50 sanitized cases: 15 direct, 15 paraphrases, 5 misspellings, 5 ambiguous/follow-up, 5 unsupported, and 5 injection/adversarial. | Committed, reviewable dataset with expected sources, required facts, and forbidden claims. | T-02 |
 | Supported retrieval | At least 95% of supported cases select the correct approved source in the top three. | Retrieval selection is scored independently from generated wording. | T-03, H-12 |
@@ -392,6 +396,71 @@ measurement is run against the approved build and environment.
 | Monthly operating cost | Normal operation at or below $5/month excluding the already-owned domain; Cloudflare Workers, KV, Vectorize, Workers AI, Access, Turnstile, and eligible static usage stay within Free-plan allowances. | Provider usage and pricing review before implementation, launch, and quarterly; measured invoices/usage after launch. | D-09, Q-01, Q-06 |
 | Anthropic exposure | Initial project limit/alert of $5/month, with provider alerts at 50%, 80%, and 100% where supported. | Human-confirmed provider settings and documented response to thresholds. | Q-02, Q-03 |
 | Availability | Best-effort portfolio service with graceful degradation and recovery; no contractual uptime or strict rate-accuracy SLA. | Failure-mode tests, hourly no-AI health monitoring, and documented runbooks rather than an invented uptime percentage. | P-10, T-10, O-05 |
+| Portfolio discoverability | Within 14 calendar days of production enablement, the live demo and public repository are linked from at least one owner-selected public portfolio or freelance profile, and the repository links back to the live demo. | Owner-reviewed link record and reachability check at launch, after 14 days, and quarterly while the demo remains public. | P-02, F-03, F-05 |
+| Portfolio engagement review | Complete an initial outcome review 90 days after public launch and quarterly thereafter using the existing privacy-safe aggregate demo request-volume metric and a count of voluntarily initiated, demo-attributable freelance inquiries or technical-review conversations maintained outside the public repository. | Dated owner review records the observed values, limitations, and whether to continue, reposition, pause, or decommission. This adds no visitor identity, cookies, contact-click instrumentation, or analytics dashboard and does not claim that traffic caused an inquiry. | O-04, F-03 through F-05, S-15 |
+
+## Portfolio outcome review and lifecycle controls
+
+The owner controls every pause, continuation, and decommission decision. These
+criteria are review triggers, not autonomous authority for an agent or runtime
+process. A pause keeps the public assistant unavailable while the owner reviews
+evidence and an approved corrective change; it does not silently relax a safety,
+privacy, quality, cost, or Free-plan requirement.
+
+### Pause criteria
+
+The owner pauses the public assistant and keeps the wedding-site feature flag
+off when any of the following is observed:
+
+- suspected secret or private-data exposure, a committed injection-safety or
+  critical-fact regression, unsupported-answer performance below its release
+  gate, or a failed abuse or admin-authorization boundary;
+- actual or forecast normal monthly operations above the $5 target, loss of an
+  applicable Cloudflare Free-plan allowance, or provider changes that make the
+  approved cost controls unreliable;
+- a required kill switch, lexical fallback, safe unavailable state, or current
+  rollback path is not demonstrably usable; or
+- a provider, platform, or model change makes the approved security, privacy,
+  quality, or best-effort behavior infeasible within V1 scope.
+
+The owner may also pause for portfolio relevance after the 90-day outcome review.
+If both privacy-safe demo usage and attributable inquiry/review evidence remain
+absent across two consecutive quarterly reviews, the owner records whether to
+reposition the public presentation, continue with an explicit rationale, or
+decommission. Absence of engagement is a decision trigger, not permission for an
+agent to alter production state.
+
+### Decommission criteria and outcome
+
+The owner may decommission V1 when the portfolio objective has been met or
+abandoned, when two consecutive monthly cost reviews cannot restore the approved
+cost boundary without scope expansion, or when a paused safety, privacy, or
+platform-viability condition has no approved remediation.
+
+Decommissioning means the human owner takes the live demo and public assistant
+offline, keeps the wedding-site feature flag disabled, retires production
+resources and secrets through an approved runbook, and updates public status
+claims. The sanitized public repository and non-sensitive, clearly historical
+portfolio evidence remain available for review. Decommissioning never authorizes
+an agent to deploy, delete resources, revoke secrets, or change DNS; those actions
+remain human-controlled. The detailed operations and evidence-retention steps
+belong in the later approved design and runbook package.
+
+**Traceability:** G-02, G-07, D-09, O-06, Q-01 through Q-06, F-03, F-04.
+
+## Consolidated product risks
+
+This summary helps product reviewers find the most material risks. It does not
+replace the threat model, architecture risk analysis, or operational runbooks
+that later seed issues must propose and the owner must approve.
+
+| Product risk | Product mitigation and evidence pointer | Detailed follow-up |
+|---|---|---|
+| The portfolio exists but is not discoverable or does not produce useful review or inquiry signals. | Use the discoverability and quarterly engagement proxies above; report observed evidence without claiming causality or exposing visitor identity. | Seed 2 portfolio topology and later launch/runbook review |
+| The assistant returns unsupported, altered, or instruction-injected event information. | Fail-closed calibrated retrieval, canonical exact answers, fixed unsupported fallback, critical-fact and injection release gates. | Retrieval design, prompt contract, threat model, and evaluation strategy |
+| Public artifacts or telemetry expose private wedding, guest, conversation, identity, or secret data. | Fictional/sanitized content, persistent disclosure, no private-system integration, restricted logging, public/private-data review, and secret scans. | Threat model, data model, logging policy, and content-approval runbook |
+| Vectorize, Workers AI, Claude, KV, or the host integration degrades or becomes unavailable. | KV remains authoritative; lexical retrieval, canonical answers, safe unavailable states, best-effort expectations, independent kill switches, and rollback remain required. | HLD failure flows, LLD, test strategy, and outage/rollback runbooks |
+| Usage, pricing, quotas, or platform changes exceed the portfolio's cost boundary. | Free-plan constraint, bounded provider use, alerts, human review, runtime disable, and the pause/decommission criteria above. | Cost model, quota revalidation, unexpected-spend runbook, and owner approval |
 
 ## Known limitations
 
