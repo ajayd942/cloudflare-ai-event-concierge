@@ -37,12 +37,13 @@ codex:
   approval_policy: never
   command: >-
     "$CODEX_BIN" --config shell_environment_policy.inherit=all
+    --config shell_environment_policy.ignore_default_excludes=true
+    --config 'shell_environment_policy.include_only=["PATH","HOME","USER","LOGNAME","SHELL","TMPDIR","LANG","LC_*","TERM","GH_TOKEN","GITHUB_TOKEN","SOURCE_REPO_URL","SYMPHONY_WORKSPACE_ROOT"]'
     --config 'model="gpt-5.6-sol"'
     --config model_reasoning_effort=xhigh app-server
-  thread_sandbox: workspace-write
+  thread_sandbox: danger-full-access
   turn_sandbox_policy:
-    type: workspaceWrite
-    networkAccess: true
+    type: dangerFullAccess
 ---
 
 # Symphony Development Workflow
@@ -61,6 +62,8 @@ You are running unattended for Linear issue `{{ issue.identifier }}`.
 - State: `{{ issue.state }}`
 - Labels: `{{ issue.labels }}`
 - URL: `{{ issue.url }}`
+
+The runner has `danger-full-access` only because Codex protects Git metadata in `workspace-write`, which prevented the required branch, commit, and push operations in AJA-6. This host permission does not expand issue authority. Treat the current issue workspace as the sole project filesystem scope; do not inspect or modify unrelated paths, macOS Keychain, personal files, other repositories, or host configuration. Use only the injected Linear tool and the dedicated repository-scoped GitHub credential.
 
 Read the complete issue description before acting. Work only inside the provided repository workspace. Use the injected `linear_graphql` tool for Linear reads and writes; never retrieve or print the raw Linear token.
 
@@ -136,7 +139,8 @@ The exception removes the design bootstrap cycle only. It does not weaken any im
 ## Runner and canary policy
 
 - Run the official reference implementation locally on the owner's trusted Mac first.
-- Use workspace-write isolation and allow network access only where the dispatched issue requires it.
+- Run `danger-full-access` only on the owner's trusted Mac and only while the foreground runner is needed. The permission exists to enable Git metadata writes; it does not authorize access outside the issue workspace.
+- Pass only the minimal reviewed shell environment to agent commands. Keep the Linear key and every cloud, model-provider, production, billing, DNS, and deployment credential out of that environment.
 - Give the runner only a repository-scoped GitHub credential and team-scoped Linear access; never expose Cloudflare or Anthropic production credentials to an agent workspace.
 - Start with one active agent. Increase to two only after three correctly scoped documentation/code canaries and an explicit owner decision.
 - Fail closed if any credential boundary, state transition, reviewer assignment, or authority check cannot be enforced.
