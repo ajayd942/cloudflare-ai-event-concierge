@@ -104,7 +104,7 @@ implementation, and review evidence.
 | PR-PUB-04 | A supported paraphrase returns a concise answer only from relevant approved context, with approved source titles and links. | Retrieval passes an evaluated relevance gate before Claude is called; returned links originate only from approved content. | H-04, H-05, H-07, API-07, API-08, S-13 |
 | PR-PUB-05 | A question with no relevant approved source returns the fixed approved fallback without calling Claude. | Unsupported evaluation cases reject safely, have no fabricated answer, and use response mode `fallback`. | H-08, T-03, Q-04 |
 | PR-PUB-06 | The visitor can recognize temporary provider failure, disabled mode, rate limiting, and Turnstile failure and can recover where retry is appropriate. | Each state has generic, actionable copy and never exposes internals or fabricates content. | A-09, API-09, W-04, M-10, T-10 |
-| PR-PUB-07 | The widget, standalone demo, and README persistently display: “Demonstration project — information is fictional or sanitized.” | The notice remains visible or persistently available on every public demonstration surface. | P-04, P-05 |
+| PR-PUB-07 | The widget, standalone demo, and README persistently display: “Demonstration project — information is fictional or sanitized.” | The notice remains visible or persistently available on every public demonstration surface. It describes the public content and purpose, not the engineering quality: the deployed system may use production-grade controls while its event details remain public-safe demonstration data. | P-04, P-05 |
 | PR-PUB-08 | The widget explains that questions are sent to an AI provider, should not contain personal information, and are not stored by the application by default. | The privacy notice is available at the point of use and matches actual behavior. | S-15, S-16, W-03 |
 
 ### Retrieval and answer behavior
@@ -116,7 +116,7 @@ implementation, and review evidence.
 | PR-RAG-03 | Relevance thresholds are calibrated from the committed evaluation set and fail closed until recorded. | No permanent lexical or cosine threshold is accepted without evaluation evidence. | H-05, H-12 |
 | PR-RAG-04 | At most four current-version approved entries are provided to the answer stage. | Diagnostics show bounded selected IDs and current version identifiers without storing question text. | V-10, A-07, H-10 |
 | PR-RAG-05 | User text and retrieved content are untrusted data and cannot override system policy. | Injection cases do not disclose system instructions, add unsupported claims, or trigger unapproved actions. | H-13, T-05 |
-| PR-RAG-06 | Response caching applies only to eligible single-turn grounded answers and the fixed unsupported fallback. | History, admin responses, validation failures, rate limits, auth failures, and upstream failures bypass caching; raw questions do not appear in keys. | K-01 through K-05 |
+| PR-RAG-06 | Response caching applies only to eligible grounded answers for a request containing the visitor's current question and no conversation history (a single-turn request), plus the fixed unsupported fallback. | Requests with conversation history, admin responses, validation failures, rate limits, auth failures, and upstream failures bypass caching; raw questions do not appear in keys. | K-01 through K-05 |
 
 ### Administration and publishing
 
@@ -124,9 +124,9 @@ implementation, and review evidence.
 |---|---|---|---|
 | PR-ADM-01 | Only an authenticated and application-allowlisted administrator can read or mutate admin state. | Cloudflare Access and Worker-side JWT validation both fail closed; state-changing requests also enforce same-origin policy. | S-02 through S-05, U-01 |
 | PR-ADM-02 | An administrator can add, edit, enable, disable, and delete draft entries; edit presentation content; preview changes; and explicitly save a validated draft. | The UI shows dirty state, field errors, navigation warning, and concurrency conflict rather than silently overwriting another edit. Every admin error uses plain-language copy with a recovery action and does not expose protocol details such as ETags or revision numbers. | C-07, M-02 through M-05 |
-| PR-ADM-03 | Preview uses draft content without making it public or polluting the published Vectorize index. | Preview shows sources, retrieval mode/scores, answer, and warnings while production index state is unchanged. | U-10, M-05 |
+| PR-ADM-03 | Preview uses draft content without making it public or polluting the published Vectorize index. | Preview batch-generates temporary draft-entry and question embeddings in memory, scores their semantic similarity alongside lexical retrieval, and shows sources, retrieval mode/scores, answer, and warnings without writing draft vectors or changing production index state. | U-10, M-05 |
 | PR-ADM-04 | Publish requires a review summary, validation, content count, explicit confirmation, current draft revision, and an idempotency key. | A successful publish creates one new content version; a failure before the permitted readiness decision leaves current public content unchanged. | U-01 through U-07, M-06 |
-| PR-ADM-05 | A published correction is available immediately through lexical retrieval even when semantic indexing is pending or failed. | Admin status displays `pending`, `ready`, or `failed`; public behavior falls back to lexical retrieval. | U-04, M-07, H-09 |
+| PR-ADM-05 | A published correction is available immediately through lexical retrieval even when semantic indexing is pending or failed. | Admin status displays `pending` while new vectors are not yet confirmed queryable, `ready` after verification, or `failed` when they did not become usable; public behavior falls back to lexical retrieval unless status is `ready`. | U-04, M-07, H-09 |
 | PR-ADM-06 | A rollback republishes a selected immutable snapshot as a new version after confirmation; it never rewrites history. | The new version records its source snapshot, and older snapshots remain unchanged. | C-04, U-08, M-08 |
 | PR-ADM-07 | Import targets the draft only after validation, preview, and confirmation; export explicitly identifies draft or published content. | Import cannot publish directly or ambiguously replace production content. | U-09, M-09 |
 | PR-ADM-08 | An administrator can disable the public assistant without a terminal. | A protected, confirmed control changes the runtime enabled state independently of content. | C-13, M-10, O-06 |
@@ -192,7 +192,8 @@ This scope restates the approved baseline without expansion.
 - File or PDF upload and ingestion.
 - Multiple customers or tenants.
 - A complex analytics dashboard.
-- D1 or another authoritative content database.
+- D1 or another authoritative content database; Workers KV remains the V1
+  authoritative content store.
 - WhatsApp integration.
 
 ### Delivery non-goals and authority boundaries
@@ -268,7 +269,10 @@ private data, and performs no unapproved action.
 **Actor:** Nontechnical content administrator
 
 **Preconditions:** Cloudflare Access and Worker-side identity checks both allow
-the administrator; the current draft and its ETag are available.
+the administrator; the current draft and its ETag are available. The ETag is the
+server-provided version marker for that draft; `If-Match` is the request header
+that returns the same marker on save so a stale tab cannot overwrite a newer
+edit. They are two parts of one concurrency check, not competing version values.
 
 1. The administrator opens `/admin` and sees the content list, current draft
    state, and runtime status.
@@ -282,9 +286,12 @@ the administrator; the current draft and its ETag are available.
    concurrency conflict. The UI explains how to refresh or reconcile the edit in
    plain language without exposing ETags, revision numbers, or other protocol
    jargon.
-5. The administrator previews a question against the draft. The preview shows
-   selected sources, retrieval mode/scores, answer, and warnings without changing
-   published content or the production vector index.
+5. The administrator previews a question against the draft. The service
+   batch-generates temporary embeddings for the draft entries and question in
+   memory, compares them for semantic retrieval, and combines that result with
+   lexical retrieval. The preview shows selected sources, retrieval mode/scores,
+   answer, and warnings without publishing content or writing the temporary
+   vectors to the production index.
 
 **Expected result:** The draft is safely reviewable and remains non-public until
 an explicit publish.
@@ -300,14 +307,21 @@ confirmed; all content is fictional, sanitized, and approved for public use.
 
 1. The admin UI shows the diff summary, validation result, content count, current
    revision, and an explicit confirmation.
-2. The browser generates an idempotency key and submits the publish request.
+2. The browser generates a new idempotency key for this publish operation and
+   submits the request. This key is separate from the draft ETag/`If-Match`
+   check: the version marker prevents stale edits, while the idempotency key lets
+   a network retry return the original publish result instead of creating a
+   duplicate version.
 3. The service revalidates authority, revision, content, bounds, and idempotency.
 4. It snapshots current published content, allocates a new version, generates
    embeddings, upserts versioned vectors, and performs bounded readiness checks.
 5. If the approved readiness rule permits, it writes the complete new published
    document once; otherwise the previous publication remains unchanged.
-6. The UI displays the new version, semantic status, lexical fallback status,
-   and exact/paraphrase/unsupported/forced-lexical smoke evidence.
+6. The UI displays the new version and defines its semantic status: `pending`
+   means the new vectors are not yet confirmed queryable, `ready` means they
+   passed verification, and `failed` means they did not become usable. It also
+   displays whether lexical fallback is active and the
+   exact/paraphrase/unsupported/forced-lexical smoke evidence.
 
 **Expected result:** The public corpus changes as one reviewed version, remains
 immediately usable through lexical retrieval, and exposes indexing degradation to
@@ -371,6 +385,12 @@ a narrow, reversible blast radius and no coupling to private wedding systems.
 | Admin identity | Cloudflare Access blocks unauthenticated traffic; the Worker validates the assertion and an application allowlist before admin access. | Negative auth, issuer, audience, expiry, subject, and origin tests fail closed. | S-02 through S-05 |
 | Secrets and production authority | Secrets stay outside Git and browser assets; only the owner supplies production values and authorizes release actions. | Secret scan, least-privilege review, and human approval records. | S-14, G-02, G-10 through G-13 |
 
+The existing wedding website is owner-controlled and is an approved host for the
+later feature-flagged integration. The fictional-or-sanitized rule does not call
+the site or the concierge implementation a mock: it prevents historical or
+private wedding information from being mistaken for current guest guidance or
+entering public portfolio artifacts.
+
 ## Success measures and release gates
 
 All values in this section are **targets**, not claims of current or achieved
@@ -391,8 +411,8 @@ post-launch outcome proxies.
 | Cached/canonical API latency | Staging p95 below 500 ms. | Approved staging measurement with cache/canonical response mode identified. | T-08 |
 | Generated-answer latency | Staging p95 below 8 seconds, with provider-dependent variance documented. | Approved staging measurement with generated response mode identified. | T-08 |
 | Widget asset size | JavaScript at or below 50 KiB gzip and CSS at or below 15 KiB gzip, excluding the Turnstile script. | Production build artifact measurement. | W-07 |
-| Host-site impact | No material layout shift from the closed widget and no more than a 5-point Lighthouse mobile performance regression. | Before/after wedding-site comparison using the approved build. | T-09 |
-| Domain-module coverage | At least 80% line and 75% branch coverage on Worker domain modules. | CI coverage report; generated UI glue is excluded from the target. | T-06 |
+| Host-site impact | No material layout shift from the closed widget and no more than a 5-point Lighthouse mobile Performance score regression. | Compare the same approved wedding-site page before and after integration on Lighthouse's 0–100 mobile Performance scale; for example, a score of 92 may not fall below 87. | T-09 |
+| Domain-module coverage | At least 80% line and 75% branch coverage on Worker domain modules. | The CI coverage report applies the numeric threshold to domain logic. Only generated UI glue is excluded from that percentage; authored UI behavior still requires applicable unit/component, accessibility, and browser tests. | T-06 |
 | Monthly operating cost | Normal operation at or below $5/month excluding the already-owned domain; Cloudflare Workers, KV, Vectorize, Workers AI, Access, Turnstile, and eligible static usage stay within Free-plan allowances. | Provider usage and pricing review before implementation, launch, and quarterly; measured invoices/usage after launch. | D-09, Q-01, Q-06 |
 | Anthropic exposure | Initial project limit/alert of $5/month, with provider alerts at 50%, 80%, and 100% where supported. | Human-confirmed provider settings and documented response to thresholds. | Q-02, Q-03 |
 | Availability | Best-effort portfolio service with graceful degradation and recovery; no contractual uptime or strict rate-accuracy SLA. | Failure-mode tests, hourly no-AI health monitoring, and documented runbooks rather than an invented uptime percentage. | P-10, T-10, O-05 |
