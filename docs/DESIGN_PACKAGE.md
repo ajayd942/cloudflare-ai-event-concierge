@@ -45,3 +45,23 @@ The [`INITIAL_IMPLEMENTATION_PLAN.md`](planning/INITIAL_IMPLEMENTATION_PLAN.md) 
 - Admin workflows and validation
 - Responsive/mobile behavior
 - Error, maintenance, and privacy messaging
+
+## Detailed design and assurance proposal
+
+The AJA-7 review package implements this inventory in the following proposed
+artifacts. They remain review material until the owner approves and merges the
+pull request:
+
+- [Detailed design](detailed-design.md)
+- [API contract](api-contract.md)
+- [Data model](data-model.md)
+- [Retrieval and grounded-answer design](retrieval-design.md)
+- [Evaluation and release strategy](evaluation-strategy.md)
+- [Security, privacy, and threat model](security.md)
+- [Cost and quota model](cost-model.md)
+- [Deployment and operations design](deployment.md)
+- [Administration guide](administration.md)
+- [Troubleshooting guide](troubleshooting.md)
+- [Operations runbooks](runbooks/README.md)
+- [Decision and requirement coverage](decision-coverage.md)
+- [ADR-0008: SQLite-backed Durable Object publish coordinator](adr/0008-use-durable-object-publish-coordinator.md)
