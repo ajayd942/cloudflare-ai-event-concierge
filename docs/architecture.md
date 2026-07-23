@@ -209,8 +209,11 @@ silently weakening the requirement or adding an unapproved storage product.
 
 Staging and production use the same logical topology with separate resources
 and credentials. Local development uses Wrangler/Miniflare and mock or local
-bindings; it does not receive production credentials. Production hostnames and
-resource identifiers are supplied later through human-controlled setup.
+bindings; it does not receive production credentials. Per D-02 and D-03, the
+production Worker uses `https://assistant.vandanawedsajay.uk` and the staging
+Worker uses `https://assistant-staging.vandanawedsajay.uk`. Resource
+identifiers, DNS configuration and verification, credentials, and releases
+remain human-controlled setup inputs and actions.
 
 ```mermaid
 flowchart TB
@@ -257,6 +260,7 @@ flowchart TB
 | Resource | Local | Staging | Production |
 |---|---|---|---|
 | Worker | Wrangler/Miniflare process | One staging Worker | One production Worker |
+| Worker origin | Wrangler/Miniflare local URL | `https://assistant-staging.vandanawedsajay.uk` | `https://assistant.vandanawedsajay.uk` |
 | Static assets | Local Vite outputs | Bound to staging Worker | Bound to production Worker |
 | KV | Local/emulated namespace | Staging-only namespace | Production-only namespace |
 | Vectorize | Mock or designated development index | Staging-only, embedding-versioned index | Production-only, embedding-versioned index |

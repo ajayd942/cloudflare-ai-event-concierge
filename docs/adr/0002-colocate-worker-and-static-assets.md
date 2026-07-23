@@ -60,9 +60,11 @@ Use one Worker per deployed environment. It serves:
   and
 - documented not-found behavior for all other paths.
 
-Staging and production use separate Workers and separate data/security/provider
-resources. The deployable remains modular internally, with typed public, admin,
-content, retrieval, answer, cache, and telemetry boundaries.
+Staging uses `https://assistant-staging.vandanawedsajay.uk`, and production uses
+`https://assistant.vandanawedsajay.uk`, as already selected by D-02 and D-03.
+They use separate Workers and separate data/security/provider resources. The
+deployable remains modular internally, with typed public, admin, content,
+retrieval, answer, cache, and telemetry boundaries.
 
 ## Consequences
 
@@ -96,8 +98,10 @@ Operational and cost/quota consequences:
 
 - Future approved implementation issues own routing modules, asset builds, and
   tests.
-- The owner approves hostnames, resource identifiers, Access policies, DNS,
-  merge, deployment, and rollback execution.
+- D-02 and D-03 fix the staging and production hostnames; the owner supplies
+  resource identifiers and configures or verifies Access policies and DNS.
+- The owner approves merge and executes or explicitly authorizes deployment and
+  rollback.
 
 ## Approval
 
